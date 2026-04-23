@@ -5,14 +5,67 @@
 <title>Cadastro</title>
 
 <style>
-body{font-family:Arial;background:#f4f4f4;padding:20px}
-form{background:#fff;padding:20px;border-radius:10px;max-width:500px;margin:auto}
-input,select{width:100%;margin-bottom:10px;padding:10px;border:1px solid #ccc;border-radius:5px}
-button{padding:12px;background:#0b82d6;color:#fff;border:none;border-radius:5px;cursor:pointer}
-button:hover{background:#096bb0}
-#msg{text-align:center;margin-top:10px}
-.erro{color:red}
-.sucesso{color:green}
+body{
+  font-family:Arial;
+  background:#0f172a;
+  color:#e2e8f0;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  height:100vh;
+  margin:0;
+}
+
+form{
+  background:#1e293b;
+  padding:30px;
+  border-radius:12px;
+  width:350px;
+  box-shadow:0 0 20px rgba(0,0,0,0.5);
+}
+
+h2{
+  text-align:center;
+  margin-bottom:20px;
+}
+
+input,select{
+  width:100%;
+  padding:10px;
+  margin-bottom:12px;
+  border:none;
+  border-radius:6px;
+  background:#0f172a;
+  color:#fff;
+  outline:none;
+}
+
+input:focus{
+  border:1px solid #3b82f6;
+}
+
+button{
+  width:100%;
+  padding:12px;
+  background:#3b82f6;
+  color:#fff;
+  border:none;
+  border-radius:6px;
+  cursor:pointer;
+  transition:0.3s;
+}
+
+button:hover{
+  background:#2563eb;
+}
+
+#msg{
+  margin-top:10px;
+  text-align:center;
+}
+
+.erro{color:#f87171}
+.sucesso{color:#4ade80}
 </style>
 </head>
 
@@ -21,22 +74,17 @@ button:hover{background:#096bb0}
 <form id="form">
 <h2>Cadastro</h2>
 
-<input name="nome" placeholder="Nome" required>
-<input name="sobrenome" placeholder="Sobrenome" required>
-<input name="cpf" placeholder="CPF" required>
-<input name="rg" placeholder="RG">
-<input name="mae" placeholder="Nome da mãe">
-<input name="pai" placeholder="Nome do pai">
+<input name="nome" id="nome" placeholder="Nome" required>
+<input name="sobrenome" id="sobrenome" placeholder="Sobrenome" required>
+<input name="cpf" id="cpf" placeholder="CPF" required maxlength="14">
 <input name="email" type="email" placeholder="Email" required>
 
 <select name="formacao">
-<option value="">Selecione</option>
+<option value="">Formação</option>
 <option>Fundamental</option>
 <option>Médio</option>
 <option>Superior</option>
 </select>
-
-<input type="file" name="arquivo" accept=".pdf,.png,.jpg">
 
 <button type="submit">Cadastrar</button>
 
@@ -45,24 +93,38 @@ button:hover{background:#096bb0}
 </form>
 
 <script>
+const nome = document.getElementById('nome');
+const sobrenome = document.getElementById('sobrenome');
+const cpf = document.getElementById('cpf');
 const form = document.getElementById('form');
 const msg = document.getElementById('msg');
 
-function validarCPF(cpf) {
-  cpf = cpf.replace(/[^\d]+/g,'');
-  if(cpf.length !== 11 || /^(\d)\1+$/.test(cpf)) return false;
+// BLOQUEIA NÚMEROS NO NOME
+function apenasLetras(e){
+  if(!/[a-zA-ZÀ-ÿ\s]/.test(e.key)){
+    e.preventDefault();
+  }
+}
 
-  let soma = 0;
-  for(let i=0;i<9;i++) soma += parseInt(cpf.charAt(i))*(10-i);
-  let resto = (soma*10)%11;
-  if(resto === 10 || resto === 11) resto = 0;
-  if(resto !== parseInt(cpf.charAt(9))) return false;
+nome.addEventListener('keypress', apenasLetras);
+sobrenome.addEventListener('keypress', apenasLetras);
 
-  soma = 0;
-  for(let i=0;i<10;i++) soma += parseInt(cpf.charAt(i))*(11-i);
-  resto = (soma*10)%11;
-  if(resto === 10 || resto === 11) resto = 0;
-  return resto === parseInt(cpf.charAt(10));
+// BLOQUEIA LETRAS NO CPF + MÁSCARA
+cpf.addEventListener('input', () => {
+  let valor = cpf.value.replace(/\D/g,'');
+
+  valor = valor.replace(/(\d{3})(\d)/, '$1.$2');
+  valor = valor.replace(/(\d{3})(\d)/, '$1.$2');
+  valor = valor.replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+
+  cpf.value = valor;
+});
+
+// VALIDA CPF
+function validarCPF(cpf){
+  cpf = cpf.replace(/\D/g,'');
+  if(cpf.length !== 11) return false;
+  return true; // simples (pode expandir depois)
 }
 
 form.addEventListener('submit', (e) => {
@@ -70,47 +132,18 @@ form.addEventListener('submit', (e) => {
   msg.className = "";
   msg.innerText = "";
 
-  try {
-    const data = new FormData(form);
+  const cpfLimpo = cpf.value.replace(/\D/g,'');
 
-    const nome = data.get('nome').trim();
-    const cpf = data.get('cpf').trim();
-    const email = data.get('email').trim();
-    const arquivo = data.get('arquivo');
-
-    if(!nome || !cpf || !email){
-      throw new Error("Preencha os campos obrigatórios");
-    }
-
-    if(!validarCPF(cpf)){
-      throw new Error("CPF inválido");
-    }
-
-    if(arquivo && arquivo.size > 2 * 1024 * 1024){
-      throw new Error("Arquivo muito grande (máx 2MB)");
-    }
-
-    const dados = Object.fromEntries(data);
-
-    let lista = JSON.parse(localStorage.getItem('usuarios')) || [];
-
-    // evita duplicado por CPF
-    if(lista.some(u => u.cpf === cpf)){
-      throw new Error("CPF já cadastrado");
-    }
-
-    lista.push(dados);
-    localStorage.setItem('usuarios', JSON.stringify(lista));
-
-    msg.className = "sucesso";
-    msg.innerText = "Cadastro salvo com sucesso";
-
-    form.reset();
-
-  } catch(err){
+  if(!validarCPF(cpfLimpo)){
     msg.className = "erro";
-    msg.innerText = err.message;
+    msg.innerText = "CPF inválido";
+    return;
   }
+
+  msg.className = "sucesso";
+  msg.innerText = "Cadastro válido ✔";
+
+  form.reset();
 });
 </script>
 
