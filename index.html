@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Cadastro</title>
+
+<style>
+body{
+  font-family:Arial;
+  background:#0f172a;
+  color:#e2e8f0;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  height:100vh;
+  margin:0;
+}
+
+form{
+  background:#1e293b;
+  padding:30px;
+  border-radius:12px;
+  width:350px;
+  box-shadow:0 0 20px rgba(0,0,0,0.5);
+}
+
+h2{
+  text-align:center;
+  margin-bottom:20px;
+}
+
+input,select{
+  width:100%;
+  padding:10px;
+  margin-bottom:12px;
+  border:none;
+  border-radius:6px;
+  background:#0f172a;
+  color:#fff;
+  outline:none;
+}
+
+input:focus{
+  border:1px solid #3b82f6;
+}
+
+button{
+  width:100%;
+  padding:12px;
+  background:#3b82f6;
+  color:#fff;
+  border:none;
+  border-radius:6px;
+  cursor:pointer;
+  transition:0.3s;
+}
+
+button:hover{
+  background:#2563eb;
+}
+
+#msg{
+  margin-top:10px;
+  text-align:center;
+}
+
+.erro{color:#f87171}
+.sucesso{color:#4ade80}
+</style>
+</head>
+
+<body>
+
+<form id="form">
+<h2>Cadastro</h2>
+
+<input name="nome" id="nome" placeholder="Nome" required>
+<input name="sobrenome" id="sobrenome" placeholder="Sobrenome" required>
+<input name="cpf" id="cpf" placeholder="CPF" required maxlength="14">
+<input name="email" type="email" placeholder="Email" required>
+
+<select name="formacao">
+<option value="">Formação</option>
+<option>Fundamental</option>
+<option>Médio</option>
+<option>Superior</option>
+</select>
+
+<button type="submit">Cadastrar</button>
+
+<div id="msg"></div>
+
+</form>
+
+<script>
+const nome = document.getElementById('nome');
+const sobrenome = document.getElementById('sobrenome');
+const cpf = document.getElementById('cpf');
+const form = document.getElementById('form');
+const msg = document.getElementById('msg');
+
+// BLOQUEIA NÚMEROS NO NOME
+function apenasLetras(e){
+  if(!/[a-zA-ZÀ-ÿ\s]/.test(e.key)){
+    e.preventDefault();
+  }
+}
+
+nome.addEventListener('keypress', apenasLetras);
+sobrenome.addEventListener('keypress', apenasLetras);
+
+// BLOQUEIA LETRAS NO CPF + MÁSCARA
+cpf.addEventListener('input', () => {
+  let valor = cpf.value.replace(/\D/g,'');
+
+  valor = valor.replace(/(\d{3})(\d)/, '$1.$2');
+  valor = valor.replace(/(\d{3})(\d)/, '$1.$2');
+  valor = valor.replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+
+  cpf.value = valor;
+});
+
+// VALIDA CPF
+function validarCPF(cpf){
+  cpf = cpf.replace(/\D/g,'');
+  if(cpf.length !== 11) return false;
+  return true; // simples (pode expandir depois)
+}
+
+form.addEventListener('submit', (e) => {
+  e.preventDefault();
+  msg.className = "";
+  msg.innerText = "";
+
+  const cpfLimpo = cpf.value.replace(/\D/g,'');
+
+  if(!validarCPF(cpfLimpo)){
+    msg.className = "erro";
+    msg.innerText = "CPF inválido";
+    return;
+  }
+
+  msg.className = "sucesso";
+  msg.innerText = "Cadastro válido ✔";
+
+  form.reset();
+});
+</script>
+
+</body>
+</html>
