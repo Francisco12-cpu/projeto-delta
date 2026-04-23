@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Cadastro</title>
+
+<style>
+body{font-family:Arial;background:#f4f4f4;padding:20px}
+form{background:#fff;padding:20px;border-radius:10px;max-width:500px;margin:auto}
+input,select{width:100%;margin-bottom:10px;padding:10px;border:1px solid #ccc;border-radius:5px}
+button{padding:12px;background:#0b82d6;color:#fff;border:none;border-radius:5px;cursor:pointer}
+button:hover{background:#096bb0}
+#msg{text-align:center;margin-top:10px}
+.erro{color:red}
+.sucesso{color:green}
+</style>
+</head>
+
+<body>
+
+<form id="form">
+<h2>Cadastro</h2>
+
+<input name="nome" placeholder="Nome" required>
+<input name="sobrenome" placeholder="Sobrenome" required>
+<input name="cpf" placeholder="CPF" required>
+<input name="rg" placeholder="RG">
+<input name="mae" placeholder="Nome da mãe">
+<input name="pai" placeholder="Nome do pai">
+<input name="email" type="email" placeholder="Email" required>
+
+<select name="formacao">
+<option value="">Selecione</option>
+<option>Fundamental</option>
+<option>Médio</option>
+<option>Superior</option>
+</select>
+
+<input type="file" name="arquivo" accept=".pdf,.png,.jpg">
+
+<button type="submit">Cadastrar</button>
+
+<div id="msg"></div>
+
+</form>
+
+<script>
+const form = document.getElementById('form');
+const msg = document.getElementById('msg');
+
+function validarCPF(cpf) {
+  cpf = cpf.replace(/[^\d]+/g,'');
+  if(cpf.length !== 11 || /^(\d)\1+$/.test(cpf)) return false;
+
+  let soma = 0;
+  for(let i=0;i<9;i++) soma += parseInt(cpf.charAt(i))*(10-i);
+  let resto = (soma*10)%11;
+  if(resto === 10 || resto === 11) resto = 0;
+  if(resto !== parseInt(cpf.charAt(9))) return false;
+
+  soma = 0;
+  for(let i=0;i<10;i++) soma += parseInt(cpf.charAt(i))*(11-i);
+  resto = (soma*10)%11;
+  if(resto === 10 || resto === 11) resto = 0;
+  return resto === parseInt(cpf.charAt(10));
+}
+
+form.addEventListener('submit', (e) => {
+  e.preventDefault();
+  msg.className = "";
+  msg.innerText = "";
+
+  try {
+    const data = new FormData(form);
+
+    const nome = data.get('nome').trim();
+    const cpf = data.get('cpf').trim();
+    const email = data.get('email').trim();
+    const arquivo = data.get('arquivo');
+
+    if(!nome || !cpf || !email){
+      throw new Error("Preencha os campos obrigatórios");
+    }
+
+    if(!validarCPF(cpf)){
+      throw new Error("CPF inválido");
+    }
+
+    if(arquivo && arquivo.size > 2 * 1024 * 1024){
+      throw new Error("Arquivo muito grande (máx 2MB)");
+    }
+
+    const dados = Object.fromEntries(data);
+
+    let lista = JSON.parse(localStorage.getItem('usuarios')) || [];
+
+    // evita duplicado por CPF
+    if(lista.some(u => u.cpf === cpf)){
+      throw new Error("CPF já cadastrado");
+    }
+
+    lista.push(dados);
+    localStorage.setItem('usuarios', JSON.stringify(lista));
+
+    msg.className = "sucesso";
+    msg.innerText = "Cadastro salvo com sucesso";
+
+    form.reset();
+
+  } catch(err){
+    msg.className = "erro";
+    msg.innerText = err.message;
+  }
+});
+</script>
+
+</body>
+</html>
