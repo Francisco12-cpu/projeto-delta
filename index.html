@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Cadastro</title>
+
+<style>
+body{
+  font-family:Arial;
+  background:#0f172a;
+  color:#e2e8f0;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  height:100vh;
+  margin:0;
+}
+
+form{
+  background:#1e293b;
+  padding:25px;
+  border-radius:12px;
+  width:400px;
+  box-shadow:0 0 25px rgba(0,0,0,0.6);
+}
+
+h2{text-align:center;margin-bottom:15px}
+
+input{
+  width:100%;
+  padding:10px;
+  margin-bottom:10px;
+  border:none;
+  border-radius:6px;
+  background:#0f172a;
+  color:#fff;
+}
+
+input:focus{
+  outline:1px solid #3b82f6;
+}
+
+button{
+  width:100%;
+  padding:12px;
+  background:#3b82f6;
+  border:none;
+  border-radius:6px;
+  color:#fff;
+  cursor:pointer;
+}
+
+button:hover{background:#2563eb}
+
+#msg{text-align:center;margin-top:10px}
+.erro{color:#f87171}
+.sucesso{color:#4ade80}
+</style>
+</head>
+
+<body>
+
+<form id="form">
+<h2>Cadastro</h2>
+
+<input id="nome" placeholder="Nome" required>
+<input id="sobrenome" placeholder="Sobrenome" required>
+
+<input id="mae" placeholder="Nome da mãe">
+<input id="pai" placeholder="Nome do pai">
+
+<input id="cpf" placeholder="CPF" maxlength="14" required>
+<input id="rg" placeholder="RG">
+
+<input id="email" type="email" placeholder="Email" required>
+
+<input id="arquivo" type="file">
+
+<button type="submit">Cadastrar</button>
+
+<div id="msg"></div>
+
+</form>
+
+<script>
+const form = document.getElementById('form');
+const msg = document.getElementById('msg');
+
+// BLOQUEAR NÚMEROS EM NOMES
+['nome','sobrenome','mae','pai'].forEach(id=>{
+  document.getElementById(id).addEventListener('keypress', e=>{
+    if(!/[a-zA-ZÀ-ÿ\s]/.test(e.key)){
+      e.preventDefault();
+    }
+  });
+});
+
+// CPF: só número + máscara
+const cpf = document.getElementById('cpf');
+cpf.addEventListener('input', ()=>{
+  let v = cpf.value.replace(/\D/g,'');
+
+  v = v.replace(/(\d{3})(\d)/,'$1.$2');
+  v = v.replace(/(\d{3})(\d)/,'$1.$2');
+  v = v.replace(/(\d{3})(\d{1,2})$/,'$1-$2');
+
+  cpf.value = v;
+});
+
+// RG simples (letras e números)
+const rg = document.getElementById('rg');
+rg.addEventListener('input', ()=>{
+  rg.value = rg.value.replace(/[^0-9a-zA-Z]/g,'');
+});
+
+// LER ARQUIVO
+function lerArquivo(file){
+  return new Promise((res,rej)=>{
+    if(!file) return res(null);
+    const reader = new FileReader();
+    reader.onload = ()=> res(reader.result);
+    reader.onerror = rej;
+    reader.readAsDataURL(file);
+  });
+}
+
+// BANCO LOCAL
+function getDB(){
+  return JSON.parse(localStorage.getItem('usuarios')) || [];
+}
+
+function saveDB(db){
+  localStorage.setItem('usuarios', JSON.stringify(db));
+}
+
+form.addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  msg.className = "";
+  msg.innerText = "";
+
+  try{
+    const cpfLimpo = cpf.value.replace(/\D/g,'');
+
+    if(cpfLimpo.length !== 11){
+      throw new Error("CPF inválido");
+    }
+
+    let db = getDB();
+
+    if(db.some(u => u.cpf === cpfLimpo)){
+      throw new Error("CPF já cadastrado");
+    }
+
+    const arquivo = document.getElementById('arquivo').files[0];
+    const arquivo64 = await lerArquivo(arquivo);
+
+    const usuario = {
+      id: Date.now(),
+      nome: document.getElementById('nome').value,
+      sobrenome: document.getElementById('sobrenome').value,
+      mae: document.getElementById('mae').value,
+      pai: document.getElementById('pai').value,
+      cpf: cpfLimpo,
+      rg: rg.value,
+      email: document.getElementById('email').value,
+      arquivo: arquivo64,
+      criado: new Date().toISOString()
+    };
+
+    db.push(usuario);
+    saveDB(db);
+
+    msg.className = "sucesso";
+    msg.innerText = "Cadastro salvo";
+
+    form.reset();
+
+  }catch(err){
+    msg.className = "erro";
+    msg.innerText = err.message;
+  }
+});
+</script>
+
+</body>
+</html>
